@@ -24,13 +24,25 @@ jobs:
 
     - name: Create Cordova Project
       run: |
+        # 1. Neues Cordova-Projekt erstellen
         cordova create taktik_build de.taktiktafel.app Taktiktafel
         cd taktik_build
+        
+        # 2. Android-Plattform hinzufügen
         cordova platform add android
+        
+        # 3. Standard-HTML-Dateien leeren und deine App-Dateien hineinkopieren
         rm -rf www/*
         cp -r ../* www/ || true
-        # Verhindert, dass unaufgeräumte GitHub-Ordner den Build stören
+        
+        # 4. Icon-Ordner erstellen und dein icon.png als App-Logo hinterlegen
+        mkdir -p res/icon/android
+        cp ../icon.png res/icon/android/mipmap-xhdpi.png || true
+        
+        # 5. Aufräumen, damit sich der Roboter nicht selbst im Kreis kopiert
         rm -rf www/taktik_build www/.github
+        
+        # 6. Die App fehlerfrei für Android zusammenbauen
         cordova build android --device --no-telemetry
 
     - name: Upload APK
