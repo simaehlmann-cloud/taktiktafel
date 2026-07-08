@@ -1,9 +1,9 @@
-name: Build Android APK (Bubblewrap)
+name: Build Android APK
 
 on:
   push:
     branches:
-      - main  # Oder master, falls dein Branch so heißt
+      - main
 
 jobs:
   build:
@@ -13,24 +13,28 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Java
+      uses: actions/setup-java@v4
       with:
-        node-version: 18
+        distribution: 'temurin'
+        java-version: '17'
 
-    - name: Install Bubblewrap CLI
-      run: npm install -g @bubblewrap/cli
+    - name: Install Cordova
+      run: npm install -g cordova
 
-    - name: Initialize and Build APK (Automated)
+    - name: Create Cordova Project
       run: |
-        # Wir erstellen eine automatisierte Konfiguration, damit Bubblewrap keine Fragen stellt
-        bubblewrap init --manifest=./manifest.json --metaInfo=./twa-manifest.json --yes
-        
-        # Build-Prozess mit automatischen Bestätigungen ausführen
-        bubblewrap build --acceptToS --yes
-        
-    - name: Upload APK Artifact
+        cordova create taktik_build de.taktiktafel.app Taktiktafel
+        cd taktik_build
+        cordova platform add android
+        rm -rf www/*
+        cp -r ../* www/ || true
+        # Verhindert, dass unaufgeräumte GitHub-Ordner den Build stören
+        rm -rf www/taktik_build www/.github
+        cordova build android --device --no-telemetry
+
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: Taktiktafel-App
-        path: ./*.apk
+        name: Taktiktafel-APK
+        path: taktik_build/platforms/android/app/build/outputs/apk/debug/app-debug.apk
