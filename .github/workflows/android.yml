@@ -35,9 +35,20 @@ jobs:
         rm -rf www/*
         cp -r ../* www/ || true
         
-        # 4. Icon-Ordner erstellen und dein icon.png als App-Logo hinterlegen
-        mkdir -p res/icon/android
-        cp ../icon.png res/icon/android/mipmap-xhdpi.png || true
+        # 4. Radikaler Icon-Fix: Wir überschreiben alle Android-System-Icons direkt auf Plattformebene
+        # Dadurch MUSS Android dein icon.png für die App verwenden
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
+        
+        # Für neuere Android-Versionen (Adaptive Icons) überschreiben wir auch das Vordergrund-Logo
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png || true
+        cp ../icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png || true
         
         # 5. Aufräumen, damit sich der Roboter nicht selbst im Kreis kopiert
         rm -rf www/taktik_build www/.github
