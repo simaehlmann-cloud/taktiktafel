@@ -22,40 +22,43 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Create Cordova Project
+    - name: Create and Setup Cordova Project
       run: |
-        # 1. Neues Cordova-Projekt mit TacticBoard-Parametern erstellen
+        # 1. Neues, leeres Cordova-Projekt erstellen
         cordova create taktik_build de.tacticboard.app TacticBoard
-        cd taktik_build
         
-        # 2. Android-Plattform hinzufügen
+        # 2. Unsere Dateien einzeln in den "www"-Ordner des Projekts kopieren
+        # (Das vermeidet den "cannot copy into itself" Fehler komplett!)
+        cp index.html taktik_build/www/index.html
+        cp manifest.json taktik_build/www/manifest.json
+        cp sw.js taktik_build/www/sw.js
+        cp image.png taktik_build/www/image.png
+        
+        # 3. Unsere bereinigte config.xml in das Cordova-Projekt kopieren
+        cp config.xml taktik_build/config.xml
+        
+        # 4. WICHTIG: Das Icon auch direkt im Hauptverzeichnis ablegen, damit Cordova es findet!
+        # Das löst den Fehler "Source path does not exist: image.png"
+        cp image.png taktik_build/image.png
+        
+        # 5. In den Ordner wechseln und Plattform hinzufügen
+        cd taktik_build
         cordova platform add android
         
-        # 3. Standard-HTML-Dateien leeren und deine App-Dateien hineinkopieren
-        rm -rf www/*
-        cp -r ../* www/ || true
+        # 6. Sicherheits-Backup-Kopie für alle System-Icons
+        cp image.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
         
-        # WICHTIG: Kopiere deine korrigierte config.xml direkt ins Build-Projekt
-        cp ../config.xml config.xml || true
+        cp image.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png || true
+        cp image.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png || true
         
-        # 4. Radikaler Icon-Fix: Wir überschreiben alle Android-System-Icons mit deinem image.png
-        cp ../image.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
-        
-        # Für neuere Android-Versionen (Adaptive Icons) überschreiben wir auch das Vordergrund-Logo
-        cp ../image.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png || true
-        cp ../image.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png || true
-        
-        # 5. Aufräumen, damit sich der Roboter nicht selbst im Kreis kopiert
-        rm -rf www/taktik_build www/.github
-        
-        # 6. Die App fehlerfrei für Android zusammenbauen
+        # 7. APK fehlerfrei bauen
         cordova build android --device --no-telemetry
 
     - name: Upload APK
