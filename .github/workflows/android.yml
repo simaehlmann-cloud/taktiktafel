@@ -106,27 +106,48 @@ jobs:
         cp platforms/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml platforms/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
 
     - name: Restore Keystore
-      run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > taktik_build/release.keystore
+      run: |
+        if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          echo "::error::Secret KEYSTORE_BASE64 fehlt! Bitte die 4 Secrets anlegen (siehe Kommentar oben in dieser Datei)."
+          exit 1
+        fi
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > taktik_build/release.keystore
+
+    - name: Verify Keystore
+      run: |
+        # Prueft VOR dem Build, ob Keystore, Passwort und Alias zusammenpassen -
+        # so bekommst du eine klare Fehlermeldung statt eines Gradle-Fehlers
+        keytool -list -keystore taktik_build/release.keystore \
+          -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+          -alias "${{ secrets.KEY_ALIAS }}" \
+          || { echo "::error::Keystore-Pruefung fehlgeschlagen! Stimmen KEYSTORE_BASE64, KEYSTORE_PASSWORD und KEY_ALIAS?"; exit 1; }
+
+    - name: Create build.json (Signatur-Konfiguration)
+      run: |
+        cd taktik_build
+        cat > build.json << EOF
+        {
+          "android": {
+            "release": {
+              "keystore": "$(pwd)/release.keystore",
+              "storePassword": "${{ secrets.KEYSTORE_PASSWORD }}",
+              "alias": "${{ secrets.KEY_ALIAS }}",
+              "password": "${{ secrets.KEY_PASSWORD }}"
+            }
+          }
+        }
+        EOF
+        sed -i 's/^        //' build.json
 
     - name: Build signed App Bundle (.aab) for Play Store
       run: |
         cd taktik_build
-        cordova build android --release -- \
-          --keystore=release.keystore \
-          --storePassword="${{ secrets.KEYSTORE_PASSWORD }}" \
-          --alias="${{ secrets.KEY_ALIAS }}" \
-          --password="${{ secrets.KEY_PASSWORD }}" \
-          --packageType=bundle
+        cordova build android --release --buildConfig=build.json -- --packageType=bundle
 
     - name: Build signed Release APK (for direct testing)
       run: |
         cd taktik_build
-        cordova build android --release -- \
-          --keystore=release.keystore \
-          --storePassword="${{ secrets.KEYSTORE_PASSWORD }}" \
-          --alias="${{ secrets.KEY_ALIAS }}" \
-          --password="${{ secrets.KEY_PASSWORD }}" \
-          --packageType=apk
+        cordova build android --release --buildConfig=build.json -- --packageType=apk
 
     - name: Upload AAB (Play Store Upload)
       uses: actions/upload-artifact@v4
